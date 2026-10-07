@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emotion Voice</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #262b36; --text: #e8eaf0;
+    --dim: #8b93a7; --accent: #ff7a59; --accent2: #ffb199; --ok: #4ade80; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+  h1 span { color: var(--accent); }
+  .status { font-size: 13px; color: var(--dim); }
+  .status.bad { color: var(--bad); }
+  .grid { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+  textarea { width: 100%; min-height: 220px; resize: vertical; background: #0c0e12; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: 15px/1.6 ui-monospace, Consolas, monospace; }
+  textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .meta { font-size: 12px; color: var(--dim); margin-top: 6px; display: flex; justify-content: space-between; }
+  .tabs { display: flex; gap: 4px; margin: 14px 0 8px; flex-wrap: wrap; }
+  .tab { background: none; border: 1px solid var(--line); color: var(--dim); padding: 4px 10px;
+    border-radius: 999px; cursor: pointer; font-size: 13px; }
+  .tab.on { background: var(--accent); color: #111; border-color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: #0c0e12; border: 1px solid var(--line); color: var(--text); padding: 4px 10px;
+    border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .chip:hover { border-color: var(--accent); color: var(--accent2); }
+  .custom { margin-top: 10px; }
+  input[type=text], select { background: #0c0e12; color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font: inherit; width: 100%; }
+  label { font-size: 13px; color: var(--dim); display: block; margin: 12px 0 4px; }
+  .slider { display: flex; align-items: center; gap: 8px; }
+  .slider input { flex: 1; accent-color: var(--accent); }
+  .slider output { width: 42px; text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .go { width: 100%; margin-top: 16px; background: var(--accent); color: #111; border: 0; padding: 12px;
+    border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; }
+  .go:disabled { opacity: .5; cursor: wait; }
+  .btn { background: #0c0e12; border: 1px solid var(--line); color: var(--text); padding: 8px 12px;
+    border-radius: 8px; cursor: pointer; font: inherit; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); }
+  .voices { max-height: 240px; overflow: auto; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .voice { display: flex; gap: 8px; align-items: center; padding: 6px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; }
+  .voice:hover { border-color: var(--line); }
+  .voice.on { border-color: var(--accent); }
+  .voice img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #222; flex: none; }
+  .voice b { font-weight: 500; font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .voice small { color: var(--dim); font-size: 11px; }
+  .err { color: var(--bad); font-size: 13px; margin-top: 10px; white-space: pre-wrap; }
+  .history { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .item { background: #0c0e12; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .item p { margin: 0 0 6px; font-size: 13px; color: var(--dim); overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .item audio { width: 100%; }
+  .item a { color: var(--accent2); font-size: 12px; }
+  .hint { font-size: 12px; color: var(--dim); margin-top: 6px; }
+  code { color: var(--accent2); }
+  details.card > summary { cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); list-style: none; }
+  details.card > summary::before { content: "+ "; color: var(--accent); }
+  details[open].card > summary::before { content: "− "; }
+  .files { font-size: 12px; color: var(--dim); margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+  .files span { display: flex; justify-content: space-between; gap: 6px; }
+  .files button { background: none; border: 0; color: var(--bad); cursor: pointer; }
+  .rec.on { border-color: var(--bad); color: var(--bad); }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--text); margin-top: 10px; }
+  .ok { color: var(--ok); font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Emotion<span>Voice</span></h1>
+    <div id="status" class="status">checking…</div>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Script</h2>
+        <textarea id="text" placeholder="Type text. Click emotion to drop tag at cursor.">[excited] We finally did it!
+[sighing] It took so long though.
+[whispering] Don't tell anyone yet.</textarea>
+        <div class="meta"><span id="syntax"></span><span id="count">0 / 5000</span></div>
+
+        <div class="tabs" id="tabs"></div>
+        <div class="chips" id="chips"></div>
+        <div class="row custom">
+          <input type="text" id="customTag" placeholder="Custom cue, e.g. slightly nervous but hopeful" style="flex:1">
+          <button class="btn" id="addCustom">Insert</button>
+        </div>
+        <div class="hint" id="customHint">S2 models take free-form cues. S1 only knows fixed tags.</div>
+
+        <button class="go" id="go">Generate voice</button>
+        <div class="err" id="err"></div>
+      </div>
+
+      <div class="history" id="history"></div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Voice</h2>
+        <label for="lang" style="margin-top:0">Language</label>
+        <div class="row">
+          <select id="lang" style="flex:1">
+            <option value="">Any</option>
+            <option value="en">English</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="zh">中文 Mandarin</option>
+            <option value="ja">日本語 Japanese</option>
+            <option value="ko">한국어 Korean</option>
+            <option value="ar">العربية Arabic</option>
+          </select>
+          <button class="btn" id="sample" title="Replace script with sample text in this language">Sample</button>
+        </div>
+        <div class="hint" id="langHint">Write script in target language. Pick native voice for no accent.</div>
+        <div class="row" style="margin-top:10px">
+          <input type="text" id="q" placeholder="Search voices…" style="flex:1">
+          <button class="btn" id="search">Find</button>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <label style="margin:0;display:flex;gap:6px;align-items:center">
+            <input type="checkbox" id="mine"> My voices only
+          </label>
+        </div>
+        <div class="voices" id="voices"></div>
+        <label for="voiceId">Voice ID (reference_id)</label>
+        <input type="text" id="voiceId" placeholder="blank = default voice">
+        <div class="hint" id="voiceName"></div>
+      </div>
+
+      <details class="card" style="margin-top:16px" id="cloneCard">
+        <summary>Add my voice</summary>
+        <label for="cTitle">Voice name</label>
+        <input type="text" id="cTitle" placeholder="e.g. My voice — Indonesian">
+        <label>Audio (10–30 s clear speech is best, up to 20 clips)</label>
+        <div class="row">
+          <input type="file" id="cFiles" accept="audio/*,.wav,.mp3,.flac,.m4a" multiple hidden>
+          <button class="btn" id="cPick">Choose files</button>
+          <button class="btn rec" id="cRec">● Record</button>
+          <span class="hint" id="cTimer"></span>
+        </div>
+        <div class="files" id="cList"></div>
+        <label for="cText">Transcript (optional, 1 clip only)</label>
+        <textarea id="cText" style="min-height:70px" placeholder="Exact words spoken. Blank = auto-transcribe."></textarea>
+        <label class="check"><input type="checkbox" id="cEnhance" checked> Clean up noise</label>
+        <label class="check"><input type="checkbox" id="cConsent"> This is my voice, or I have the speaker's permission.</label>
+        <button class="go" id="cGo" style="font-size:14px;padding:10px">Create voice</button>
+        <div class="err" id="cErr"></div>
+        <div class="ok" id="cOk"></div>
+        <div class="hint">Saved private in your Fish account. Find it with "My voices only".</div>
+      </details>
+
+      <div class="card" style="margin-top:16px">
+        <h2>Settings</h2>
+        <label for="model">Model</label>
+        <select id="model"></select>
+        <label for="format">Format</label>
+        <select id="format"><option>mp3</option><option>wav</option><option>opus</option></select>
+
+        <label>Speed</label>
+        <div class="slider"><input type="range" id="speed" min="0.5" max="2" step="0.05" value="1"><output></output></div>
+        <label>Volume (dB)</label>
+        <div class="slider"><input type="range" id="volume" min="-10" max="10" step="1" value="0"><output></output></div>
+        <label>Expressiveness (temperature)</label>
+        <div class="slider"><input type="range" id="temperature" min="0" max="1" step="0.05" value="0.7"><output></output></div>
+        <label>Diversity (top_p)</label>
+        <div class="slider"><input type="range" id="top_p" min="0" max="1" step="0.05" value="0.7"><output></output></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const TAGS = {
+  "Basic": ["happy","sad","angry","excited","calm","nervous","confident","surprised","satisfied","delighted",
+    "scared","worried","upset","frustrated","depressed","empathetic","embarrassed","disgusted","moved","proud",
+    "relaxed","grateful","curious","sarcastic"],
+  "Advanced": ["disdainful","unhappy","anxious","hysterical","indifferent","uncertain","doubtful","confused",
+    "disappointed","regretful","guilty","ashamed","jealous","envious","hopeful","optimistic","pessimistic",
+    "nostalgic","lonely","bored","contemptuous","sympathetic","compassionate","determined","resigned"],
+  "Tone": ["in a hurry tone","shouting","screaming","whispering","soft tone","emphasis"],
+  "Sounds": ["laughing","chuckling","sobbing","crying loudly","sighing","groaning","panting","gasping",
+    "yawning","snoring","clear throat"],
+  "Effects": ["audience laughing","background laughter","crowd laughing","break","long-break"],
+};
+// S1 lacks these
+const S1_MISSING = new Set(["emphasis","clear throat"]);
+
+let tab = "Basic";
+const isS1 = () => $("model").value === "s1";
+const wrap = t => isS1() ? `(${t})` : `[${t}]`;
+
+function renderTabs() {
+  $("tabs").innerHTML = "";
+  Object.keys(TAGS).forEach(name => {
+    const b = document.createElement("button");
+    b.className = "tab" + (name === tab ? " on" : "");
+    b.textContent = name;
+    b.onclick = () => { tab = name; renderTabs(); renderChips(); };
+    $("tabs").appendChild(b);
+  });
+}
+
+function renderChips() {
+  $("chips").innerHTML = "";
+  TAGS[tab].filter(t => !(isS1() && S1_MISSING.has(t))).forEach(t => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = t;
+    b.onclick = () => insert(wrap(t) + " ");
+    $("chips").appendChild(b);
+  });
+  $("syntax").innerHTML = isS1()
+    ? "S1 syntax: <code>(happy)</code> at sentence start"
+    : "S2 syntax: <code>[happy]</code> — free-form cues OK";
+  $("addCustom").disabled = isS1();
+  $("customTag").disabled = isS1();
+}
+
+function insert(s) {
+  const ta = $("text");
+  const a = ta.selectionStart, b = ta.selectionEnd;
+  ta.value = ta.value.slice(0, a) + s + ta.value.slice(b);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = a + s.length;
+  count();
+}
+
+// convert tags when switching model so script stays valid
+function convertSyntax() {
+  const ta = $("text");
+  ta.value = isS1()
+    ? ta.value.replace(/\[([a-z][a-z \-]*)\]/gi, "($1)")
+    : ta.value.replace(/\(([a-z][a-z \-]*)\)/gi, (m, t) => allTags.has(t.toLowerCase()) ? `[${t}]` : m);
+}
+const allTags = new Set(Object.values(TAGS).flat());
+
+function count() {
+  const n = $("text").value.length;
+  $("count").textContent = `${n} / 5000`;
+  $("count").style.color = n > 5000 ? "var(--bad)" : "";
+}
+
+document.querySelectorAll(".slider").forEach(s => {
+  const i = s.querySelector("input"), o = s.querySelector("output");
+  const upd = () => o.textContent = i.value;
+  i.oninput = upd; upd();
+});
+
+$("text").oninput = count;
+$("addCustom").onclick = () => {
+  const v = $("customTag").value.trim();
+  if (v) { insert(wrap(v) + " "); $("customTag").value = ""; }
+};
+$("customTag").onkeydown = e => { if (e.key === "Enter") $("addCustom").click(); };
+$("model").onchange = () => { convertSyntax(); renderChips(); checkLang(); };
+
+async function loadConfig() {
+  try {
+    const c = await (await fetch("/api/config")).json();
+    $("model").innerHTML = c.models.map(m => `<option ${m === c.default_model ? "selected" : ""}>${m}</option>`).join("");
+    if (c.default_voice) $("voiceId").value = c.default_voice;
+    $("status").textContent = c.has_key ? "API key loaded" : "No API key — edit .env and restart";
+    $("status").className = "status" + (c.has_key ? "" : " bad");
+    renderTabs(); renderChips(); count(); checkLang();
+    if (c.has_key) search();
+  } catch {
+    $("status").textContent = "Server not reachable"; $("status").className = "status bad";
+  }
+}
+
+async function search() {
+  $("voices").innerHTML = '<div class="hint">Loading…</div>';
+  const p = new URLSearchParams({ q: $("q").value, mine: $("mine").checked ? "1" : "0", lang: $("lang").value });
+  try {
+    const r = await fetch("/api/voices?" + p);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    if (!d.items.length) { $("voices").innerHTML = '<div class="hint">No voices found.</div>'; return; }
+    $("voices").innerHTML = "";
+    d.items.forEach(v => {
+      const el = document.createElement("div");
+      el.className = "voice" + (v.id === $("voiceId").value ? " on" : "");
+      el.innerHTML = `<img alt="" src="${!v.cover ? "" : v.cover.startsWith("http") ? v.cover : "https://public-platform.r2.fish.audio/" + v.cover}"
+        onerror="this.style.visibility='hidden'"><div style="min-width:0"><b></b><small></small></div>`;
+      el.querySelector("b").textContent = v.title;
+      el.querySelector("small").textContent = (v.langs || []).join(", ");
+      el.onclick = () => {
+        $("voiceId").value = v.id;
+        $("voiceName").textContent = "Using: " + v.title;
+        document.querySelectorAll(".voice").forEach(x => x.classList.remove("on"));
+        el.classList.add("on");
+      };
+      $("voices").appendChild(el);
+    });
+  } catch (e) {
+    $("voices").innerHTML = `<div class="err">${e.message}</div>`;
+  }
+}
+// --- language ---
+const SAMPLES = {
+  en: "[excited] We finally did it!\n[sighing] It took so long though.\n[whispering] Don't tell anyone yet.",
+  id: "[excited] Akhirnya kita berhasil!\n[sighing] Tapi prosesnya lama sekali.\n[whispering] Jangan bilang siapa-siapa dulu, ya.",
+  zh: "[excited] 我们终于做到了！\n[sighing] 不过真的花了好长时间。\n[whispering] 先别告诉任何人哦。",
+  ja: "[excited] ついにやったよ！\n[sighing] でも、本当に時間がかかったね。\n[whispering] まだ誰にも言わないでね。",
+  ar: "[excited] أخيرًا نجحنا!\n[sighing] لكن الأمر استغرق وقتًا طويلًا.\n[whispering] لا تخبر أحدًا بعد.",
+  ko: "[excited] 드디어 해냈어!\n[sighing] 근데 정말 오래 걸렸다.\n[whispering] 아직 아무한테도 말하지 마.",
+};
+const S1_LANGS = new Set(["", "en", "zh", "ja", "ko", "ar"]);
+
+function checkLang() {
+  const l = $("lang").value;
+  $("text").dir = l === "ar" ? "rtl" : "auto";
+  const bad = isS1() && !S1_LANGS.has(l);
+  $("langHint").textContent = bad
+    ? "S1 does not support Bahasa Indonesia. Use an S2 model."
+    : "Write script in target language. Pick native voice for no accent.";
+  $("langHint").style.color = bad ? "var(--bad)" : "";
+  return !bad;
+}
+
+$("lang").onchange = () => {
+  try { localStorage.setItem("lang", $("lang").value); } catch {}
+  $("voiceId").value = ""; $("voiceName").textContent = "";
+  checkLang(); search();
+};
+$("sample").onclick = () => {
+  const l = $("lang").value || "en";
+  let s = SAMPLES[l];
+  if (isS1()) s = s.replace(/\[([a-z][a-z \-]*)\]/gi, "($1)");
+  $("text").value = s; count();
+};
+try { const l = localStorage.getItem("lang"); if (l !== null) $("lang").value = l; } catch {}
+
+$("search").onclick = search;
+$("q").onkeydown = e => { if (e.key === "Enter") search(); };
+$("mine").onchange = search;
+
+$("go").onclick = async () => {
+  $("err").textContent = "";
+  const text = $("text").value.trim();
+  if (!text) { $("err").textContent = "Type some text first."; return; }
+  if (!checkLang()) { $("err").textContent = "S1 cannot speak Bahasa Indonesia. Switch model."; return; }
+  $("go").disabled = true; $("go").textContent = "Generating…";
+  try {
+    const r = await fetch("/api/tts", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text, voice_id: $("voiceId").value, model: $("model").value, format: $("format").value,
+        speed: +$("speed").value, volume: +$("volume").value,
+        temperature: +$("temperature").value, top_p: +$("top_p").value,
+      }),
+    });
+    if (!r.ok) {
+      let msg = r.statusText;
+      try { msg = (await r.json()).error; } catch {}
+      throw new Error(msg);
+    }
+    const blob = await r.blob();
+    const name = r.headers.get("X-File-Name") || "voice." + $("format").value;
+    addHistory(text, URL.createObjectURL(blob), name);
+  } catch (e) {
+    $("err").textContent = e.message;
+  } finally {
+    $("go").disabled = false; $("go").textContent = "Generate voice";
+  }
+};
+
+function addHistory(text, url, name) {
+  const el = document.createElement("div");
+  el.className = "item";
+  el.innerHTML = `<p></p><audio controls autoplay></audio><a download>Download</a> <small class="hint">· also saved to output/${name}</small>`;
+  el.querySelector("p").textContent = text;
+  el.querySelector("audio").src = url;
+  const a = el.querySelector("a"); a.href = url; a.download = name;
+  $("history").prepend(el);
+}
+
+// --- clone my voice ---
+let clips = []; // {name, blob}
+function renderClips() {
+  $("cList").innerHTML = "";
+  clips.forEach((c, i) => {
+    const row = document.createElement("span");
+    row.innerHTML = `<span></span><button title="Remove">✕</button>`;
+    row.firstChild.textContent = `${c.name} · ${(c.blob.size / 1024 / 1024).toFixed(1)} MB`;
+    row.lastChild.onclick = () => { clips.splice(i, 1); renderClips(); };
+    $("cList").appendChild(row);
+  });
+}
+$("cPick").onclick = () => $("cFiles").click();
+$("cFiles").onchange = e => {
+  [...e.target.files].forEach(f => clips.push({ name: f.name, blob: f }));
+  e.target.value = ""; renderClips();
+};
+
+// mic -> WAV (Fish likes wav/mp3/flac; browser gives webm, so convert)
+let rec = null, recStart = 0, recTick = null;
+$("cRec").onclick = async () => {
+  if (rec) { rec.stop(); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { $("cErr").textContent = "Mic blocked. Allow mic in browser."; return; }
+  const chunks = [];
+  rec = new MediaRecorder(stream);
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    clearInterval(recTick); $("cTimer").textContent = "";
+    $("cRec").classList.remove("on"); $("cRec").textContent = "● Record"; rec = null;
+    try {
+      const wav = await toWav(new Blob(chunks));
+      clips.push({ name: `recording_${clips.length + 1}.wav`, blob: wav }); renderClips();
+    } catch { $("cErr").textContent = "Could not read recording."; }
+  };
+  rec.start(); recStart = Date.now();
+  $("cRec").classList.add("on"); $("cRec").textContent = "■ Stop";
+  recTick = setInterval(() => {
+    const s = Math.round((Date.now() - recStart) / 1000);
+    $("cTimer").textContent = `${s}s` + (s < 10 ? " (aim 10–30s)" : "");
+  }, 250);
+};
+
+async function toWav(blob) {
+  const ctx = new AudioContext();
+  const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+  ctx.close();
+  const ch = buf.getChannelData(0), rate = buf.sampleRate, n = ch.length;
+  const out = new DataView(new ArrayBuffer(44 + n * 2));
+  const w = (o, str) => [...str].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); out.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt ");
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, rate, true); out.setUint32(28, rate * 2, true);
+  out.setUint16(32, 2, true); out.setUint16(34, 16, true); w(36, "data"); out.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {
+    const v = Math.max(-1, Math.min(1, ch[i]));
+    out.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+  }
+  return new Blob([out], { type: "audio/wav" });
+}
+
+$("cGo").onclick = async () => {
+  $("cErr").textContent = ""; $("cOk").textContent = "";
+  const title = $("cTitle").value.trim();
+  if (!title) return $("cErr").textContent = "Give the voice a name.";
+  if (!clips.length) return $("cErr").textContent = "Add or record audio first.";
+  if (!$("cConsent").checked) return $("cErr").textContent = "Tick the permission box.";
+  const fd = new FormData();
+  fd.append("title", title);
+  fd.append("consent", "1");
+  fd.append("enhance", $("cEnhance").checked ? "1" : "0");
+  fd.append("lang", $("lang").value);
+  fd.append("transcript", $("cText").value);
+  clips.forEach(c => fd.append("voices", c.blob, c.name));
+  $("cGo").disabled = true; $("cGo").textContent = "Uploading…";
+  try {
+    const r = await fetch("/api/clone", { method: "POST", body: fd });
+    const d = await r.json().catch(() => ({ error: r.statusText }));
+    if (!r.ok) throw new Error(d.error);
+    $("voiceId").value = d.id;
+    $("voiceName").textContent = "Using: " + d.title;
+    $("cOk").textContent = `Voice "${d.title}" ready. Selected for next generate.`;
+    clips = []; renderClips(); $("cTitle").value = ""; $("cText").value = "";
+    $("mine").checked = true; $("lang").value = ""; search();
+  } catch (e) {
+    $("cErr").textContent = e.message;
+  } finally {
+    $("cGo").disabled = false; $("cGo").textContent = "Create voice";
+  }
+};
+
+loadConfig();
+</script>
+</body>
+</html>
