@@ -1,5 +1,4 @@
 # EmotionVoice
-# EmotionVoice
 
 Turn text into **emotional, expressive speech** — and clone your own voice — with the [Fish Audio](https://fish.audio) API.
 A small local web app plus a CLI. One double-click to start on Windows.
